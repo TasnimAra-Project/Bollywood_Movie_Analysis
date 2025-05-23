@@ -1,0 +1,208 @@
+---
+title: "Lights, Camera, Ratings! What Makes Bollywood Movies a Hit"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+```
+
+```{r, include=FALSE}
+# to install packages, remove # and run following (you need to install a package only once)
+# install.packages("package name")
+install.packages("tidyverse")
+install.packages("ComplexUpset")
+install.packages("devtools")
+install.packages("ggupset")
+install.packages("ggcharts")
+install.packages("ggplot2")
+install.packages("tidytext")
+```
+
+```{r, include=FALSE}
+# to load packages, remove # and run following
+# library(package name)
+library(tidyverse)
+library(devtools)
+library(ggupset)
+library(patchwork)
+library(ggcharts)
+library(ggplot2)
+library(dplyr)
+library(tidytext)
+```
+
+
+## Introduction
+
+
+Have you ever found yourself drawn to a Bollywood movie simply because of the genre or the iconic actors gracing the screen? Bollywood, known for its colorful storytelling and larger than life characters, holds a unique space in global cinema. But what really makes a movie stand out in the crowd and become a hit? Is it the action packed storyline, the allure of a romance, or perhaps the comedic timing that keeps the audience hooked? And what about the actors,do stars like Shah Rukh Khan and Deepika Padukone bring an added charm that raises a film’s ratings? In this blog, we dive into these questions, using data to uncover the hidden patterns that define a Bollywood blockbuster. Through analysis, we look at how genre and actor experience play into movie ratings on IMDB. Grab some popcorn as we explore the ingredients that make a Bollywood film truly unforgettable.
+
+
+
+
+## Data
+
+We Took the datasets from GitHub and The Movie Database (TMDb), both reliable sources that offer comprehensive details about films from around the world. TMDb, in particular, served as the foundation of our analysis, as it provided essential information such as genres, cast, release years, and, most importantly, IMDB ratings. These ratings gave us a direct measure of audience approval which is a key metric in determining what people truly value in a film.
+
+
+```{r, include=FALSE}
+
+
+IMDB_movies <- read_csv("IMDB-Movie-Dataset(2023-1951)(in).csv")
+Bollywood_movies <- read.csv("bollywood_movies(in).csv")
+```
+
+
+## Results
+
+
+How does the genre of a movie influence its IMDB rating?
+
+```{r, include=FALSE}
+
+actor_data <- IMDB_movies %>% 
+separate(col = "cast", into= c("Actor Name", "Remaining Actors"), sep = ",", convert = TRUE) %>% 
+separate(col = "genre", into= c("Genre", "Remaining Genre"), sep = ",", convert = TRUE) %>%  
+filter(year >= 2000 & year <= 2023) %>% 
+select( movie_name, `Actor Name`, Genre)
+
+movie <- Bollywood_movies %>% 
+filter(year >= 2000 & year <= 2023)
+
+movies <- inner_join(actor_data,movie , by = c("movie_name" = "title"))
+
+
+```
+
+
+
+Genre is often the heart of a movie. It sets the tone, expectations, and, in many cases, defines the core fanbase. In Bollywood, genres are even more critical. Each genre comes with its own style.Romance movies promise emotional depth, action movies deliver high adrenaline, and biopics bring historical and personal stories to life.Our first graph which is more focused on 2000 to 2023 reveals the distribution of Bollywood movies across various genres, illustrating which types of films are most frequently produced. This gives us a glimpse into Bollywood's production trends and, indirectly, audience demand over the years.The chart shows that Action, Comedy, and Drama are the most common genres, with 381, 338, and 269 films respectively. Action films, with their thrilling sequences and elaborate fight scenes, have a universal appeal that draws large audiences. Comedy and Drama follow closely, reflecting Bollywood’s long-standing tradition of offering films that bring both joy and emotional depth to audiences. Comedy serves as a light hearted escape, while Drama resonates with viewers by exploring the complexities of human emotions and relationships.Biographical films, though fewer in number, have become more popular in recent years. This genre, which tells the real life stories of inspiring individuals, appeals to audiences who appreciate authenticity and relatable stories. Movies like Dangal and Mary Kom show that Bollywood viewers are increasingly interested in films that highlight the strength and bravery of real people. Although there are fewer biographical films compared to other popular genres, they often receive high praise and ratings, showing their growing significance in Bollywood.
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r, fig.width = 11, fig.height = 5, fig.align='center', echo=FALSE}
+
+
+
+movies %>%
+  mutate(genre_list = as.list(Genre)) %>% 
+ distinct(movie_name, year, genre_list) %>% 
+  ggplot(aes(x=genre_list)) +
+    geom_bar() +
+    geom_text(stat='count', aes(label=after_stat(count)), vjust=-1) +
+    scale_x_upset(n_intersections = 20) +
+    scale_y_continuous(breaks = NULL, lim = c(0, 1350), name = "")+
+  labs(x = "Genres" ,title = "Number of Bolloywood Movies for each genre")+
+  theme_minimal()
+ 
+  
+```
+
+```{r,fig.width = 5, fig.height = 5, fig.align='center', echo=FALSE}
+ratings <-
+movies %>% 
+  filter((Genre=="Action")|(Genre == "Comedy")|(Genre == "Drama")| (Genre == "Crime")|(Genre == "Biography")|(Genre == "Horror")) %>% 
+  group_by(Genre) %>% 
+  summarize(mean_ratings= mean(rating, na.rm= TRUE)) 
+p1 <- ggplot(ratings)+
+  geom_col(aes(x= Genre, y = mean_ratings))+
+  labs(x= "Genre", y= "Mean Ratings", title ="Influence of Genre \n on the Mean Ratings" )+
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90))
+
+filtered_genre <-
+  movies %>% 
+  filter((Genre=="Action")|(Genre == "Comedy")|(Genre == "Drama")| (Genre == "Crime")|(Genre == "Biography")|(Genre == "Horror"))
+p2 <- ggplot(filtered_genre) +
+  geom_boxplot(aes(x= Genre, y = rating))+
+  labs(x= "Genre", y= "Ratings", title = "Distribution of Ratings by \n Genre" ) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90))
+
+p1+p2 
+
+```
+Then we decided to look at the average IMDB ratings by genre on the left, and the distribution of ratings within each genre on the right. Together, these visuals help us understand not only how different genres generally perform but also the range of audience responses each genre receives. The bar chart on the left, titled "Influence of Genre on the Mean Ratings," shows the average IMDB rating for each genre. Biography films stand out as the highest rated genre, with an average rating just above 6. This suggests that audiences appreciate movies that tell real life stories, likely because they find them both inspiring and authentic.Comedy and Crime follow closely, with mean ratings slightly below Biography. Comedy’s strong performance may reflect Bollywood’s knack for humor, which resonates with a wide range of viewers. Films like 3 Idiots and Hera Pheri continue to draw positive responses for their humor and relatability. Meanwhile, Crime, often characterized by intense storytelling and suspense, attracts audiences who enjoy thrillers and darker narratives, suggesting that Bollywood’s exploration of this genre has been well received.The box plot on the right, titled "Distribution of Ratings by Genre," provides a deeper look at the spread of ratings within each genre.The box plot shows that Biography, Comedy, and Drama genres tend to receive relatively high and consistent ratings, meaning Bollywood audiences generally favor these genres. Horror has the most variability and the lowest median rating, indicating mixed or mostly negative reception. Action and Crime genres fall somewhere in between, with moderate spreads and medians, showing variability in audience responses. This suggests that while some movies in these genres succeed, others may struggle to meet viewer expectations.
+
+
+
+
+
+
+
+Are established actors linked to higher movie ratings over the years?
+
+
+
+```{r, include=FALSE}
+# data wrangling task 2
+# Define established actors as those with multiple appearances in the dataset
+established_actors <- movies %>%
+  select(`Actor Name`,year, movie_name) %>% 
+  group_by(`Actor Name`) %>%
+  summarize(number_of_movies = n()) %>% 
+  filter(number_of_movies > 20 ) 
+
+established_movies <- movies %>%
+  inner_join(established_actors, by = "Actor Name") 
+average_rating_by_year <-
+established_movies %>% 
+  filter(year>=2018 & year<= 2023) %>% 
+  group_by(year, `Actor Name`) %>% 
+  summarize(mean_rating = mean(rating))
+
+```
+
+
+
+In Bollywood, actors aren't just performers, they are icons with massive followings. A star’s name on the movie poster can be enough to draw crowds. Think of Amitabh Bachchan’s commanding screen presence or Shah Rukh Khan’s iconic romantic hero persona—these actors bring an allure that has kept audiences coming back for decades. Established actors with long careers, such as Shah Rukh Khan, Salman Khan, and Amitabh Bachchan, often bring a dedicated fan base, which can impact a movie’s box office performance and its reception. However, popularity does not always translate to higher ratings. By examining the average movie ratings of established Bollywood actors over the years, we can gain insights into how their performances have been received by audiences and critics alike. This analysis can help us understand whether well-known actors consistently deliver high quality films or if their ratings vary widely from year to year. We defined established actors with actors who have more than 20 movies in this dataset.
+
+
+
+
+
+```{r,echo=FALSE}
+
+
+
+ggplot(average_rating_by_year, aes(x = mean_rating, y= `Actor Name`)) +
+  geom_col(fill = "skyblue") +
+  facet_wrap(~year, scales = "free_y") +
+  labs(x = "Year", y = "Average Rating", title = "Average Movie Rating of Established Actors by Year") 
+
+```
+
+The graph displays the average IMDB ratings of films featuring established Bollywood actors from 2018 to 2023. Notably, there are variations in the ratings for each actor across these years. For instance, Shahid Kapoor appears to have higher ratings in 2022 and 2023, indicating a strong reception for his recent films. Salman Khan, on the other hand, shows fluctuating ratings, with certain years dipping below others, suggesting mixed reactions to his films over time. Actors like Akshay Kumar and Ajay Devgn also display moderate ratings, with consistency in the mid-range, implying steady but not exceptional reception. Amitabh Bachchan maintains a generally favorable trend, reflecting his sustained appeal even in recent years. Overall, the graph suggests that while established actors may attract viewers, their movies' ratings can still vary significantly, possibly due to factors like plot, direction, and audience expectations.
+
+
+
+
+ 
+
+
+
+
+## Conclusion
+
+
+
+Bollywood movies are a vibrant blend of genres, star power, and evolving audience tastes. Our exploration revealed that while genres like Biography and Comedy often steal the show, others like Horror have a harder time winning hearts. Established actors bring their own magic, but even superstars have their ups and downs when it comes to ratings. So, whether you’re a die-hard fan of Shah Rukh Khan’s romance dramas, love the thrill of an action packed Akshay Kumar film, or just want a good laugh with a Bollywood comedy, there’s something in this industry for everyone. Next time you pick a Bollywood movie, you’ll know exactly what might make it a hit or a miss! also as Bollywood changes keeping track of these trends can guide the industry in creating movies that audiences enjoy. 
+
+ 
+
+
+
+
+
+
