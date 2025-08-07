@@ -3,6 +3,12 @@
 This data storytelling project explores the **factors influencing Bollywood movie success**, with a focus on **IMDB ratings**. By analyzing genres, star power, and time periods, this project uncovers the hidden patterns that contribute to a blockbuster hit in Indian cinema.
 
 ---
+## 🧠 Built With
+
+- Quarto (.qmd)
+- Language: **R**
+
+![R](https://img.shields.io/badge/Language-R-blue.svg)
 
 ## 🎯 Project Objective
 
